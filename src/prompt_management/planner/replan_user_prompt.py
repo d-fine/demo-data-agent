@@ -1,0 +1,13 @@
+prompt = """
+The current plan needs revision because: {replan_reason}
+
+Current plan:
+{current_plan}
+
+User query: '{user_query}'
+
+When replanning:
+- Focus on **UNBLOCKING** the workflow rather than perfecting it.
+- Only modify steps that are truly preventing progress.
+- Prefer simpler, more achievable alternatives over complex rewrites.
+"""
