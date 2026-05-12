@@ -1,5 +1,5 @@
 [project]
-name = "data-agent-for-electricity-markets"
+name = "demo-data-agent"
 version = "0.0.2"
 description = "Demo data agent with a multi-agent architecture designed to answer user's questions."
 authors = [
