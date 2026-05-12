@@ -1,0 +1,73 @@
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+# Same as Black.
+line-length = 120
+indent-width = 4
+
+# Assume Python 3.12
+target-version = "py312"
+
+[lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["ALL"]
+ignore = [
+    "COM812",
+    "D100", "D104", "D203", "D213",
+    "E111", "E114", "E117",
+    "EXE002",
+    "W191"
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# exclude exercise-notebooks
+exclude = ["src/exercises/*/*.ipynb"]
+
+[format]
+# use double quotes for strings.
+quote-style = "double"
+
+# indent with spaces, rather than tabs.
+indent-style = "space"
+
+# respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# exclude exercise-notebooks
+exclude = ["src/exercises/*/*.ipynb"]
