@@ -33,7 +33,7 @@ def mock_enabled_agents() -> list[Agents]:
     return [Agents.SYNTHESIZER]
 
 
-@patch("agents.planner.prompts.langfuse_client.get_prompt")
+@patch("prompt_management.registry.langfuse_client.get_prompt")
 def test_get_compiled_prompt_from_registry_text_prompt_without_params(
     mock_prompt: MagicMock, mock_prompt_config: PromptRegistryConfig
 ) -> None:
@@ -46,7 +46,7 @@ def test_get_compiled_prompt_from_registry_text_prompt_without_params(
     assert result == prompt
 
 
-@patch("agents.planner.prompts.langfuse_client.get_prompt")
+@patch("prompt_management.registry.langfuse_client.get_prompt")
 def test_get_compiled_prompt_from_registry_text_prompt_with_params(
     mock_prompt: MagicMock, mock_prompt_config: PromptRegistryConfig
 ) -> None:
@@ -60,7 +60,7 @@ def test_get_compiled_prompt_from_registry_text_prompt_with_params(
     assert result == "This is a mock prompt with parameter 'test_value'."
 
 
-@patch("agents.planner.prompts.langfuse_client.get_prompt")
+@patch("prompt_management.registry.langfuse_client.get_prompt")
 def test_get_compiled_prompt_from_registry_chat_prompt_without_params(
     mock_prompt: MagicMock, mock_prompt_config: PromptRegistryConfig
 ) -> None:
@@ -77,7 +77,7 @@ def test_get_compiled_prompt_from_registry_chat_prompt_without_params(
     assert result == "This is a test system prompt"
 
 
-@patch("agents.planner.prompts.langfuse_client.get_prompt")
+@patch("prompt_management.registry.langfuse_client.get_prompt")
 def test_get_compiled_prompt_from_registry_chat_prompt_with_wrong_chat_prompt_format(
     mock_prompt: MagicMock, mock_prompt_config: PromptRegistryConfig
 ) -> None:
@@ -91,7 +91,7 @@ def test_get_compiled_prompt_from_registry_chat_prompt_with_wrong_chat_prompt_fo
         _ = get_compiled_prompt_from_registry(mock_prompt_config, prompt_params=None, role=PromptRole.SYSTEM)
 
 
-@patch("agents.planner.prompts.langfuse_client.get_prompt")
+@patch("prompt_management.registry.langfuse_client.get_prompt")
 def test_get_compiled_prompt_from_registry_chat_prompt_not_available_for_role(
     mock_prompt: MagicMock, mock_prompt_config: PromptRegistryConfig
 ) -> None:

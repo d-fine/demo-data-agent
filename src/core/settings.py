@@ -17,6 +17,8 @@ class PromptRegistrySettings(BaseModel):
     executor: PromptRegistryConfig = PromptRegistryConfig(name="")
     web_researcher: PromptRegistryConfig = PromptRegistryConfig(name="")
     synthesizer: PromptRegistryConfig = PromptRegistryConfig(name="")
+    chart_summarizer: PromptRegistryConfig = PromptRegistryConfig(name="")
+    visualizer: PromptRegistryConfig = PromptRegistryConfig(name="")
 
 
 class OpenAISettings(BaseModel):

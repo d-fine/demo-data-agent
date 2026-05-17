@@ -1,25 +1,38 @@
-from agents.common.prompts import common_system_prompt
+from core.settings import settings
 from models.agents import Agents
+from models.prompts import PromptRole
 from models.state import State
+from prompt_management.registry import get_compiled_prompt_from_registry
 
 
-def chart_summarizer_system_prompt() -> str:
-    """Build the system prompt for the chart summarizer to return a caption for the chart result."""
-    specific_sytem_prompt = """
-        You can only generate image captions.\n
-        You are working with a researcher colleague and a chart generator colleague.\n
-        Your task is to generate a standalone, concise summary for the provided chart image saved at a local PATH,
-        where the PATH should be and only be provided by your chart generator colleague.\n
-        The summary should be no more than 3 sentences and should not mention the chart itself.
+def chart_summarizer_system_prompt() -> str | None:
+    """Build the system prompt for the chart summarizer to return a caption for the chart result.
+
+    Uses only the prompt registry.
     """
-    return common_system_prompt + f"\n{specific_sytem_prompt}"
+    return get_compiled_prompt_from_registry(
+        prompt_config=settings.prompt_registry.chart_summarizer,
+        prompt_params=None,
+        role=PromptRole.SYSTEM,
+    )
 
 
-def chart_summarizer_user_prompt(state: State) -> str:
+def chart_summarizer_user_prompt(state: State) -> str | None:
     """Build the user prompt for the chart summarizer to return the final result."""
     relevant_messages: list[str] = [
         _msg.content
         for _msg in state.messages
         if _msg.creator in (Agents.PLANNER, Agents.WEB_RESEARCHER, Agents.VISUALIZER)
     ]
-    return f"**User question:** {state.user_query}\n\n**Context:**\n\n" + "\n\n---\n\n".join(relevant_messages)
+    context = "\n\n---\n\n".join(relevant_messages)
+
+    prompt_params = {
+        "user_query": state.user_query,
+        "context": context,
+    }
+
+    return get_compiled_prompt_from_registry(
+        prompt_config=settings.prompt_registry.chart_summarizer,
+        prompt_params=prompt_params,
+        role=PromptRole.USER_PLAN,
+    )

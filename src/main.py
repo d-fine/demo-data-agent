@@ -2,6 +2,7 @@ import asyncio
 from argparse import ArgumentParser, Namespace
 from uuid import uuid4
 
+# ruff: noqa: SIM117
 from langfuse import get_client, propagate_attributes
 
 from agents import PlannerNode
@@ -29,9 +30,10 @@ async def main(query: str) -> str:
     session_id = f"cli-{uuid4()}"
 
     logger.info("Invoke multi-agent with Langfuse tracing...")
-    # Wrap the full multi-agent run in a Langfuse observation and attach
-    # high-level context so all emitted spans are grouped and query-specific.
-    with langfuse_client.start_as_current_observation(as_type="span", name="data-agent-query"):
+    with langfuse_client.start_as_current_observation(
+        as_type="span",
+        name="data-agent-query",
+    ):
         with propagate_attributes(
             session_id=session_id,
             tags=["data-agent", "cli"],
@@ -53,9 +55,11 @@ def parse_args() -> Namespace:
 if __name__ == "__main__":
     query = parse_args().query
     logger.info("User's query: %s", query)
-
-    resp = asyncio.run(main(query=query))
-    logger.info("Agent's answer:\n%s", resp)
-
-    # Ensure all observations are sent before the process exits.
-    langfuse_client.flush()
+    try:
+        resp = asyncio.run(main(query=query))
+        logger.info("Agent's answer:\n%s", resp)
+    except Exception:
+        logger.exception("Agent execution failed.")
+        raise
+    finally:
+        langfuse_client.flush()
