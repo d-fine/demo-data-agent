@@ -43,6 +43,25 @@ The data agent consists of different sub-agents that are chosen and used depende
 5. **Chart-summarizer:** The chart summarizer is called if the Visualizer creates a plot. It summarizes the findings of the plot.
 6. **Synthesizer:** The synthesizer sub-agent generates text that summarizes the derieved results.
 
+## Observability with Langfuse
+
+This project is instrumented for tracing with [Langfuse](https://langfuse.com) following the official integration best practices:
+
+- **Environment-based configuration:** Langfuse credentials and host are configured via environment variables (see `settings.env.template`), which are exported in `core.settings.AgentSettings.model_post_init`:
+  - `LANGFUSE_PUBLIC_KEY`
+  - `LANGFUSE_SECRET_KEY`
+  - `LANGFUSE_BASE_URL` (e.g. `https://cloud.langfuse.com`, `https://us.cloud.langfuse.com`, etc.)
+- **Pydantic AI instrumentation:** All Pydantic AI agents are created with `instrument=True` and `Agent.instrument_all()` is called at startup (see `src/agents/planner/planner.py`). This uses Pydantic AI's OpenTelemetry support so all model calls and tools emit spans.
+- **Top-level trace per query:** The CLI entrypoint (`src/main.py`) wraps each multi-agent run in a Langfuse observation using `langfuse.get_client().start_as_current_observation(...)` and `propagate_attributes(...)` to attach:
+  - a `session_id` for the query
+  - tags such as `"data-agent"` and `"cli"`
+  - metadata including the original user query
+- **Flushing in short-lived runs:** After the CLI completes, `langfuse_client.flush()` is called to ensure all observations are exported before the process exits.
+
+These patterns follow the recommendations from:
+- Langfuse + Pydantic AI integration guide: https://langfuse.com/integrations/frameworks/pydantic-ai
+- Langfuse skill for AI coding agents (best-practices skill used for this setup): https://github.com/langfuse/skills/tree/main/skills/langfuse
+
 ## Execute the data agent
 
 Run `python src/main.py --query "<Your question>"` in your CLI.

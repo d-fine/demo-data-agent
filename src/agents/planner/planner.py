@@ -13,6 +13,7 @@ planner = Agent(
     model=f"openai:{settings.openai.planner_llm}",
     deps_type=State,
     output_type=Plan,
+    instrument=True,
 )
 
 
