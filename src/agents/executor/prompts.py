@@ -5,7 +5,9 @@ from models.agents import (
     Agents,
     get_agent_descriptions,
 )
+from models.prompts import PromptRole
 from models.state import State
+from prompt_management.registry import get_compiled_prompt_from_registry
 
 
 def format_agent_list_for_execution(enabled_agents: list[Agents]) -> str:
@@ -28,30 +30,30 @@ def format_agent_guidelines_for_execution(enabled_agents: list[Agents]) -> str:
 
 
 def executor_system_prompt(enabled_agents: list[Agents]) -> str:
-    """Build a system prompt for the Executor to return a specific agent instruction."""
+    """Build a system prompt for the Executor to return a specific agent instruction.
+
+    Uses only the prompt registry. A missing or misconfigured prompt is treated as an error.
+    """
     agent_list = format_agent_list_for_execution(enabled_agents)
     agent_guidelines = format_agent_guidelines_for_execution(enabled_agents)
-    return f"""
-You are the **Executor** in a multi-agent system with these agents:
+    prompt_params = {
+        "agent_list": agent_list,
+        "agent_guidelines": agent_guidelines,
+        "max_replans": settings.max_replans,
+    }
 
-{agent_list}.
-
-**Tasks**
-Create a specific agent instruction including the following information:
-    1. Decide if the current plan need revision.                    →   `"replan_flag": true|false`
-    2. Decide which agent to run next.                              →   `"goto": "<agent_name>"`
-    3. Give one-sentence justification.                             →   `"reason": "<text>"`
-    4. Write the exact question that the chosen agent should answer →   "query": "<text>"
-
-**Guidelines**
-{agent_guidelines}
-- After **{settings.max_replans}** failed replans for the same step, move on.
-- If you *just replanned* (replan_flag is true) let the assigned agent type before requesting another replan.
-"""
+    return get_compiled_prompt_from_registry(
+        prompt_config=settings.prompt_registry.executor,
+        prompt_params=prompt_params,
+        role=PromptRole.SYSTEM,
+    )
 
 
 def executor_user_prompt(state: State) -> str:
-    """Build the user prompt for the Executor to return a specific agent instruction."""
+    """Build the user prompt for the Executor to return a specific agent instruction.
+
+    Uses only the prompt registry. A missing or misconfigured prompt is treated as an error.
+    """
     # Get the replan attempts for the current step, if available. Otherwise sets it to 0.
     attempts = (state.replan_attempts or {}).get(state.current_step, 0)
     messages_tail = state.messages[-4:]
@@ -62,31 +64,23 @@ def executor_user_prompt(state: State) -> str:
     current_step_agent = plan.get_step(step_id=state.current_step).instruction.agent
     next_step_agent = plan.get_step(step_id=state.current_step)
 
-    return f"""
-Create a specific agent instruction relying on the following context:
-- User query ...............: {state.user_query}
-- Current step index .......: {state.current_step}
-- Current plan step ........: {plan}
-- Just-replanned flag ......: {state.replan_flag}
-- Previous messages ........: {messages_tail}
+    prompt_params = {
+        "user_query": state.user_query,
+        "current_step": state.current_step,
+        "plan": str(plan),
+        "replan_flag": state.replan_flag,
+        "messages_tail": str(messages_tail),
+        "attempts": attempts,
+        "max_replans": settings.max_replans,
+        "planner_agent": Agents.PLANNER,
+        "next_step_agent": next_step_agent,
+        "current_step_agent": current_step_agent,
+        "web_researcher_agent": Agents.WEB_RESEARCHER,
+    }
 
-**PRIORITIZE FORWARD PROGRESS:** Only replan if the current step is completly blocked.
-1. If any reasonable data was obtained that addresses the step's core goal, set `"replan": false` and proceed.
-2. Set `"replan": true` **only if** all the conditions are met:
-    - The step has produced zero useful information.
-    - The missing information cannot be approximated or obtained by remaining steps.
-    - `{attempts} < {settings.max_replans}`.
-3. When `{attempts} == {settings.max_replans}`, always move forward by setting `"replan": false`.
 
-### Decide `"goto"`
-- If `"replan": true`   →    `"goto": "{Agents.PLANNER}"`.
-- If current step has made reasonable progress  →    `"goto": "{next_step_agent}"`.
-- Otherwise execute the current step's assigned agent  →    `"goto": "{current_step_agent}"`.
-
-### Build `"query"`
-Write a clear, standalone instruction for the chosen agent. If the chosen agent is
-`{Agents.WEB_RESEARCHER}`, the query should be a standalone
-question, written in plain english, and answerable by the agent.
-
-Ensure that the query uses consistent language as the user's query.
-"""
+    return get_compiled_prompt_from_registry(
+        prompt_config=settings.prompt_registry.executor,
+        prompt_params=prompt_params,
+        role=PromptRole.USER_PLAN,
+    )

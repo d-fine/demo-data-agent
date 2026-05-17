@@ -8,6 +8,7 @@ executor = Agent(
     model=f"openai:{settings.openai.executor_llm}",
     deps_type=State,
     output_type=DetailedAgentInstruction,
+    instrument=True,
 )
 
 

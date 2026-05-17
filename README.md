@@ -19,16 +19,34 @@ For package-management the Python library `uv` is used. To setup the development
 
 
 2. **Create the file for the environment variables**: Copy and rename the file `settings.env.template` to `settings.env` and fill in the missing information and keys, e.g.,
-    - `openai__key`: Access the OpenAI API to send requests and receive the models responses
-    - `tavily__key`: Access the Tavily API to send requests and receive the models responses
-    - `langfuse__key`: Access the LLM engineering platform "langfuse" used for tracing and prompt engineering
+    - `openai__key`: Access the OpenAI API
+    - `tavily__key`: Access the Tavily API
+    - `langfuse__public_key`: Public key for your Langfuse project
+    - `langfuse__secret_key`: Secret key for your Langfuse project
+    - `langfuse__base_url`: Langfuse base URL (e.g. `https://cloud.langfuse.com`)
 
-**Note:** If you are missing any keys, you can skip this step for now. Please note that you can run the tests but not the actual agent. In order to initialize the actual data agents, an OpenAI, Tavily, and Langfuse credentials are required. Create the respective accounts and copy the keys from the following websites:
-- [OpenAI](https://platform.openai.com/docs/overview)
-- [Tavily](https://www.tavily.com/)
-- [Langfuse](https://langfuse.com/)
+   When working in the workshop, there are two options:
 
-3. **Execute the project's tests:** To check if the setup was successful, let's execute the project's tests.
+   - **Option A – use provided credentials (simplest):** We will give you `openai__key`, `tavily__key`, and shared Langfuse keys. You can run the agent end-to-end, but you cannot log in to Langfuse Cloud to view traces or prompts. With this option you can **skip step 3** (prompts are pre-registered in the shared project), and you will **not** be able to do Exercise 3 (observability).
+
+   - **Option B – use your own Langfuse project:** Create your own Langfuse account and project at [Langfuse](https://langfuse.com/), generate a public/secret key pair, and set `langfuse__public_key`, `langfuse__secret_key`, and `langfuse__base_url` in `settings.env`. This lets you log into the Langfuse UI to inspect traces and prompts and is required to complete **Exercise 3**.
+
+3. **Register prompts in Langfuse (run once per own Langfuse project):**
+   In the workshop, this step is **only needed for Option B** (your own Langfuse project). Before using the agents the first time in that project, register the prompts in the Langfuse Prompt Management UI.
+
+   1. Make sure your `settings.env` is configured with your Langfuse project (public/secret key and base URL).
+   2. Open the notebook `src/prompt_management/register_prompt.ipynb` in your editor (VS Code, Jupyter, etc.).
+   3. Run all cells in the notebook. This will create the following prompts in your Langfuse project:
+      - `planner_prompt`
+      - `executor_prompt`
+      - `web_researcher_prompt`
+      - `synthesizer_prompt`
+      - `visualizer_prompt`
+      - `chart_summarizer_prompt`
+
+   You only need to do this once per Langfuse project or whenever you intentionally change the prompt templates under `src/prompt_management/`.
+
+4. **Execute the project's tests:** To check if the setup was successful, run the project's tests.
     - Initiate the project's tests. Here, we rely on `pytest`.
     - Run the tests.
 
@@ -42,6 +60,25 @@ The data agent consists of different sub-agents that are chosen and used depende
 4. **Visualizer:** The sub-agent uses the data provided by the Web-researcher to generate a plot, if this is requested by the user.
 5. **Chart-summarizer:** The chart summarizer is called if the Visualizer creates a plot. It summarizes the findings of the plot.
 6. **Synthesizer:** The synthesizer sub-agent generates text that summarizes the derieved results.
+
+## Observability with Langfuse
+
+This project is instrumented for tracing with [Langfuse](https://langfuse.com) following the official integration best practices:
+
+- **Environment-based configuration:** Langfuse credentials and host are configured via environment variables (see `settings.env.template`), which are exported in `core.settings.AgentSettings.model_post_init`:
+  - `LANGFUSE_PUBLIC_KEY`
+  - `LANGFUSE_SECRET_KEY`
+  - `LANGFUSE_BASE_URL` (e.g. `https://cloud.langfuse.com`, `https://us.cloud.langfuse.com`, etc.)
+- **Pydantic AI instrumentation:** All Pydantic AI agents are created with `instrument=True` and `Agent.instrument_all()` is called at startup (see `src/agents/planner/planner.py`). This uses Pydantic AI's OpenTelemetry support so all model calls and tools emit spans.
+- **Top-level trace per query:** The CLI entrypoint (`src/main.py`) wraps each multi-agent run in a Langfuse observation using `langfuse.get_client().start_as_current_observation(...)` and `propagate_attributes(...)` to attach:
+  - a `session_id` for the query
+  - tags such as `"data-agent"` and `"cli"`
+  - metadata including the original user query
+- **Flushing in short-lived runs:** After the CLI completes, `langfuse_client.flush()` is called to ensure all observations are exported before the process exits.
+
+These patterns follow the recommendations from:
+- Langfuse + Pydantic AI integration guide: https://langfuse.com/integrations/frameworks/pydantic-ai
+- Langfuse skill for AI coding agents (best-practices skill used for this setup): https://github.com/langfuse/skills/tree/main/skills/langfuse
 
 ## Execute the data agent
 

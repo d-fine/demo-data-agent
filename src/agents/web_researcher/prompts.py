@@ -1,10 +1,15 @@
-from agents.common.prompts import common_system_prompt
+from core.settings import settings
+from models.prompts import PromptRole
+from prompt_management.registry import get_compiled_prompt_from_registry
 
 
-def web_researcher_system_prompt() -> str:
-    """Build the system prompt for the Web-Researcher to return a web-research result."""
-    specific_sytem_prompt = """
-You are the **Web-Researcher**. You can ONLY perform research by using the provided search tool (tavily_tool).
-When you have found the necessary information, end your output. Do NOT attempt to take further actions.
-"""
-    return common_system_prompt + f"\n{specific_sytem_prompt}"
+def web_researcher_system_prompt() -> str | None:
+    """Build the system prompt for the Web-Researcher to return a web-research result.
+
+    Uses only the prompt registry.
+    """
+    return get_compiled_prompt_from_registry(
+        prompt_config=settings.prompt_registry.web_researcher,
+        prompt_params=None,
+        role=PromptRole.SYSTEM,
+    )
