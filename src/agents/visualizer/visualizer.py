@@ -12,6 +12,7 @@ visualizer = Agent(
     tools=[run_matplotlib],
     deps_type=State,
     output_type=Message,
+    instrument=True,
 )
 
 
