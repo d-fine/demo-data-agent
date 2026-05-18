@@ -31,6 +31,14 @@ For package-management the Python library `uv` is used. To setup the development
 
    - **Option B – use your own Langfuse project:** Create your own Langfuse account and project at [Langfuse](https://langfuse.com/), generate a public/secret key pair, and set `langfuse__public_key`, `langfuse__secret_key`, and `langfuse__base_url` in `settings.env`. This lets you log into the Langfuse UI to inspect traces.
 
+    **Note:** If you are missing any keys, you can skip this step until the workshop (Option A). Please note that you can run the tests but not the actual agent. In order to initialize the actual data agents on your own, an OpenAI, Tavily, and Langfuse credentials are required. Create the respective accounts and copy the keys from the following websites:
+    - [OpenAI](https://platform.openai.com/docs/overview)
+    - [Tavily](https://www.tavily.com/)
+    - [Langfuse](https://langfuse.com/)
+
+3. **Execute the project's tests:** To check if the setup was successful, let's execute the project's tests.
+    - Initiate the project's tests. Here, we rely on `pytest`.
+    - Run the tests.
 ## Data agent approach
 
 The data agent consists of different sub-agents that are chosen and used dependend on the task.
