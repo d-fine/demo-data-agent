@@ -19,19 +19,26 @@ For package-management the Python library `uv` is used. To setup the development
 
 
 2. **Create the file for the environment variables**: Copy and rename the file `settings.env.template` to `settings.env` and fill in the missing information and keys, e.g.,
-    - `openai__key`: Access the OpenAI API to send requests and receive the models responses
-    - `tavily__key`: Access the Tavily API to send requests and receive the models responses
-    - `langfuse__key`: Access the LLM engineering platform "langfuse" used for tracing and prompt engineering
+    - `openai__key`: Access the OpenAI API
+    - `tavily__key`: Access the Tavily API
+    - `langfuse__public_key`: Public key for your Langfuse project
+    - `langfuse__secret_key`: Secret key for your Langfuse project
+    - `langfuse__base_url`: Langfuse base URL (e.g. `https://cloud.langfuse.com`)
 
-**Note:** If you are missing any keys, you can skip this step for now. Please note that you can run the tests but not the actual agent. In order to initialize the actual data agents, an OpenAI, Tavily, and Langfuse credentials are required. Create the respective accounts and copy the keys from the following websites:
-- [OpenAI](https://platform.openai.com/docs/overview)
-- [Tavily](https://www.tavily.com/)
-- [Langfuse](https://langfuse.com/)
+   When working in the workshop, there are two options:
+
+   - **Option A – use provided credentials (simplest):** We will give you `openai__key`, `tavily__key`, and shared Langfuse keys. You can run the agent end-to-end, but you cannot log in to Langfuse Cloud to view traces or prompts. With this option you will **not** be able to view the traces of your agent.
+
+   - **Option B – use your own Langfuse project:** Create your own Langfuse account and project at [Langfuse](https://langfuse.com/), generate a public/secret key pair, and set `langfuse__public_key`, `langfuse__secret_key`, and `langfuse__base_url` in `settings.env`. This lets you log into the Langfuse UI to inspect traces.
+
+    **Note:** If you are missing any keys, you can skip this step until the workshop (Option A). Please note that you can run the tests but not the actual agent. In order to initialize the actual data agents on your own, an OpenAI, Tavily, and Langfuse credentials are required. Create the respective accounts and copy the keys from the following websites:
+    - [OpenAI](https://platform.openai.com/docs/overview)
+    - [Tavily](https://www.tavily.com/)
+    - [Langfuse](https://langfuse.com/)
 
 3. **Execute the project's tests:** To check if the setup was successful, let's execute the project's tests.
     - Initiate the project's tests. Here, we rely on `pytest`.
     - Run the tests.
-
 ## Data agent approach
 
 The data agent consists of different sub-agents that are chosen and used dependend on the task.
