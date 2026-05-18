@@ -27,7 +27,7 @@ For package-management the Python library `uv` is used. To setup the development
 
    When working in the workshop, there are two options:
 
-   - **Option A – use provided credentials (simplest):** We will give you `openai__key`, `tavily__key`, and shared Langfuse keys. You can run the agent end-to-end, but you cannot log in to Langfuse Cloud to view traces or prompts. With this option you can **skip step 3** (prompts are pre-registered in the shared project), and you will **not** be able to view the traces of your agent.
+   - **Option A – use provided credentials (simplest):** We will give you `openai__key`, `tavily__key`, and shared Langfuse keys. You can run the agent end-to-end, but you cannot log in to Langfuse Cloud to view traces or prompts. With this option you will **not** be able to view the traces of your agent.
 
    - **Option B – use your own Langfuse project:** Create your own Langfuse account and project at [Langfuse](https://langfuse.com/), generate a public/secret key pair, and set `langfuse__public_key`, `langfuse__secret_key`, and `langfuse__base_url` in `settings.env`. This lets you log into the Langfuse UI to inspect traces.
 
