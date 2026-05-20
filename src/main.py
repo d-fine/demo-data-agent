@@ -31,7 +31,7 @@ async def main(query: str) -> str:
     logger.info("Invoke multi-agent with Langfuse tracing...")
     # Wrap the full multi-agent run in a Langfuse observation and attach
     # high-level context so all emitted spans are grouped and query-specific.
-    with langfuse_client.start_as_current_observation(as_type="span", name="data-agent-query"):
+    with langfuse_client.start_as_current_observation(as_type="span", name="data-agent-query"):  # noqa: SIM117
         with propagate_attributes(
             session_id=session_id,
             tags=["data-agent", "cli"],
