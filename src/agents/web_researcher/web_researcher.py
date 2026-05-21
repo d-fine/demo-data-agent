@@ -9,6 +9,7 @@ web_researcher = Agent(
     model=f"openai:{settings.openai.web_search_llm}",
     tools=[tavily_search_tool(api_key=settings.tavily.key)],
     output_type=Message,
+    instrument=True,
 )
 
 

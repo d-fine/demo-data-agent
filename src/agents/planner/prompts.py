@@ -1,12 +1,5 @@
-import langfuse
-
-from core.logger import logger
-from core.settings import settings
 from models.agents import LIST_OF_ENABLED_AGENTS_FOR_PLANNER, Agents, get_agent_descriptions
-from models.prompts import PromptRegistryConfig, PromptRole
 from models.state import Plan, State
-
-langfuse_client = langfuse.get_client()
 
 
 def format_agent_list_for_planning(enabled_agents: list[Agents]) -> str:
@@ -69,86 +62,92 @@ def format_agent_guidelines_for_planning(enabled_agents: list[Agents]) -> str:
     return "\n".join(guidelines)
 
 
-def get_compiled_prompt_from_registry(
-    prompt_config: PromptRegistryConfig, prompt_params: dict[str, str] | None, role: PromptRole | None
-) -> str | None:
-    """Get compiled prompt from Prompt Registry.
+def planner_system_prompt(enabled_agents: list[Agents]) -> str:
+    """Build the system prompt for the Planner to return a high-level plan.
 
-    Params:
-        prompt_config (PromptRegistryConfig): Metadata to receive specific prompt from Prompt Registry.
-        prompt_params (dict[str, str] | None): Additional parameters to successfully compile the prompt
-            in case of placeholders in the registered prompt.
-        role (PromptRole | None): Required for prompts of type "chat" only to select the desired role prompt.
-
-    Returns:
-        str: Compiled prompt received from the Prompt Registry.
-
+    This is the inline equivalent of the template previously stored in
+    `prompt_management/planner/system_prompt.py`.
     """
-    raw_prompt_obj = langfuse_client.get_prompt(**prompt_config.model_dump())
-    raw_prompt = raw_prompt_obj.prompt
-
-    if prompt_config.type == "chat":
-        if role is None:
-            msg = "Missing role specification to select role prompt from chat prompt."
-            raise ValueError(msg)
-
-        raw_prompt = __get_prompt_from_chat_prompt(chat_prompt=raw_prompt, role=role)
-
-    if raw_prompt is None or not isinstance(raw_prompt, str):
-        return None
-
-    return raw_prompt.format(**(prompt_params or {}))
-
-
-def __get_prompt_from_chat_prompt(chat_prompt: list[dict[str, str]], role: PromptRole) -> str | None:
-    """Get specific role prompt from chat prompt."""
-    try:
-        prompt = next((p["content"] for p in chat_prompt if p.get("role") == role), None)
-
-    except AttributeError as err:
-        msg = "Received prompt from the Prompt registry is not a chat prompt."
-        raise ValueError(msg) from err
-
-    if prompt is None:
-        logger.info("No prompt is available for role '%s'.", role)
-
-    return prompt
-
-
-def planner_system_prompt(enabled_agents: list[Agents]) -> str | None:
-    """Build the system prompt for the Panner to return a high-level plan."""
     agent_list = format_agent_list_for_planning(enabled_agents)
     agent_guidelines = format_agent_guidelines_for_planning(enabled_agents)
-    prompt_params = {"agent_list": agent_list, "agent_guidelines": agent_guidelines}
 
-    return get_compiled_prompt_from_registry(
-        prompt_config=settings.prompt_registry.planner, prompt_params=prompt_params, role=PromptRole.SYSTEM
-    )
+    return f"""
+You are the **Planner** in a multi-agent system. Break the user's request into a sequence of numbered steps
+(1, 2, 3, ...). **There is no hard limit on step count** as long as the plan is concise and each step has a
+clear goal.
+
+You may decompose the user's query into sub-queries, each of which is a separate step. Break each query into the
+smallest possible sub-queries so that each sub-query is answerable with a single data source.
+For example, if the user's query is "What were the key action items in the last quarter, and what was a recent
+news story for each of them?", you may break it into steps:
+
+1. Fetch the key action items in the last quarter.
+2. Fetch a recent news story for the first action item.
+3. Fetch a recent news story for the second action item.
+4. Fetch a recent news story for the last action item.
+
+Here is a list of available agents you can call upon to execute the tasks in your plan. You may call only one
+agent per step.
+
+{agent_list}
+
+Guidelines:
+{agent_guidelines}
+"""
 
 
-def planner_instruction_prompt(enabled_agents: list[Agents]) -> str | None:
-    """Build instruction prompt for the Planner to return a high-level plan."""
+def planner_instruction_prompt(enabled_agents: list[Agents]) -> str:
+    """Build instruction prompt for the Planner to return a high-level plan.
+
+    These instructions focus on the expected Plan structure and agent usage.
+    """
     agent_list = format_agent_list_for_planning(enabled_agents)
     agent_guidelines = format_agent_guidelines_for_planning(enabled_agents)
-    prompt_params = {"agent_list": agent_list, "agent_guidelines": agent_guidelines}
 
-    return get_compiled_prompt_from_registry(
-        prompt_config=settings.prompt_registry.planner, prompt_params=prompt_params, role=PromptRole.INSTRUCTIONS
-    )
+    return f"""
+You create a high-level **Plan** that describes how to answer the user's query.
+
+- Use only these agents in the plan: {agent_list}
+- Follow these guidelines when assigning agents to steps:
+{agent_guidelines}
+
+Return a JSON object matching the `Plan` schema with:
+- "type": "initial" for a first plan or "replan" when revising an existing plan
+- "steps": a list of objects with:
+  - "step_id": an integer step index starting at 1
+  - "instruction": an object with:
+    - "agent": one of the supported agent names
+    - "action": a short description of what that agent should do in the step
+"""
 
 
-def planner_user_prompt(state: State) -> str | None:
-    """Build the user prompt for the Planner to return a high-level plan."""
-    prompt_params = {"user_query": state.user_query}
+def planner_user_prompt(state: State) -> str:
+    """Build the user prompt for the Planner to return a high-level plan.
 
-    if state.replan_flag:
-        replan_reason = state.last_reason or ""
-        current_plan = state.plan or Plan(steps=[])
-        current_plan_str = current_plan.model_dump_json()
-        prompt_params.update({"replan_reason": replan_reason, "current_plan": current_plan_str})
+    This uses inline templates equivalent to those previously stored under
+    `prompt_management/planner/plan_user_prompt.py` and
+    `prompt_management/planner/replan_user_prompt.py`.
+    """
+    if not state.replan_flag:
+        return f"""Generate a new plan from scratch.
 
-    role = PromptRole.USER_REPLAN if state.replan_flag else PromptRole.USER_PLAN
+User query: '{state.user_query}'
+"""
 
-    return get_compiled_prompt_from_registry(
-        prompt_config=settings.prompt_registry.planner, prompt_params=prompt_params, role=role
-    )
+    replan_reason = state.last_reason or ""
+    current_plan = state.plan or Plan(steps=[])
+    current_plan_str = current_plan.model_dump_json()
+
+    return f"""
+The current plan needs revision because: {replan_reason}
+
+Current plan:
+{current_plan_str}
+
+User query: '{state.user_query}'
+
+When replanning:
+- Focus on **UNBLOCKING** the workflow rather than perfecting it.
+- Only modify steps that are truly preventing progress.
+- Prefer simpler, more achievable alternatives over complex rewrites.
+"""
