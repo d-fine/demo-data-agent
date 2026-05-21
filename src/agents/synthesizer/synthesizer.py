@@ -8,6 +8,7 @@ synthesizer = Agent(
     model=f"openai:{settings.openai.synthesizer_llm}",
     deps_type=State,
     output_type=Message,
+    instrument=True,
 )
 
 

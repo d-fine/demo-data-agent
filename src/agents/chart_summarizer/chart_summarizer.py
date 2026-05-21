@@ -8,6 +8,7 @@ chart_summarizer = Agent(
     model=f"openai:{settings.openai.chart_summarizer_llm}",
     deps_type=State,
     output_type=Message,
+    instrument=True,
 )
 
 
