@@ -8,7 +8,7 @@ from core.settings import settings
 from models.state import Message, State
 
 visualizer = Agent(
-    model=f"openai:{settings.openai.visualizer_llm}",
+    model=f"openai-responses:{settings.openai.visualizer_llm}",
     tools=[run_matplotlib],
     deps_type=State,
     output_type=Message,

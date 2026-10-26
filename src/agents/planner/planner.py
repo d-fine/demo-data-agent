@@ -10,7 +10,7 @@ langfuse_client = get_client()
 Agent.instrument_all()
 
 planner = Agent(
-    model=f"openai:{settings.openai.planner_llm}",
+    model=f"openai-responses:{settings.openai.planner_llm}",
     deps_type=State,
     output_type=Plan,
     instrument=True,

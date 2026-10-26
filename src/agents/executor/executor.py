@@ -5,7 +5,7 @@ from core.settings import settings
 from models.state import DetailedAgentInstruction, State
 
 executor = Agent(
-    model=f"openai:{settings.openai.executor_llm}",
+    model=f"openai-responses:{settings.openai.executor_llm}",
     deps_type=State,
     output_type=DetailedAgentInstruction,
     instrument=True,
