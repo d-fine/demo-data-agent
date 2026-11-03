@@ -6,7 +6,7 @@ from core.settings import settings
 from models.state import Message
 
 web_researcher = Agent(
-    model=f"openai:{settings.openai.web_search_llm}",
+    model=f"openai-responses:{settings.openai.web_search_llm}",
     tools=[tavily_search_tool(api_key=settings.tavily.key)],
     output_type=Message,
     instrument=True,

@@ -5,7 +5,7 @@ from core.settings import settings
 from models.state import Message, State
 
 synthesizer = Agent(
-    model=f"openai:{settings.openai.synthesizer_llm}",
+    model=f"openai-responses:{settings.openai.synthesizer_llm}",
     deps_type=State,
     output_type=Message,
     instrument=True,
